@@ -9,8 +9,13 @@
 		.string "%lf\n"
 	.random:
 		.string "--random"
-   	.operand:
-		.quad	1
+	.debug:
+		.string "%s\n"
+	
+	.section	.data
+    		.operand:
+			.quad	1
+	
 	.text
 	.globl  main
         .type   main, @function
@@ -37,12 +42,14 @@ main:
 	jne	.incorrect_input
 		movq	%r13, %rdi
 		addq	$8, %rdi
+		movq	(%rdi), %rdi
 		leaq	.r_mode(%rip), %rsi
 		call	fopen@PLT
 		movq	%rax, 8(%rsp) 	# rsp + 8 - file_in
 	
 		movq	%r13, %rdi
 		addq	$16, %rdi
+		movq	(%rdi), %rdi
 		leaq	.w_mode(%rip), %rsi
 		call	fopen@PLT
 		movq	%rax, 16(%rsp) 	# rsp + 16 - file_out
@@ -51,18 +58,22 @@ main:
 		.if:
 			movq	%r13, %rdi
 			addq	$8, %rdi
+			movq	(%rdi), %rdi
 			leaq	.random(%rip), %rsi
 			call	strcmp@PLT
 			cmp	$0, %rax
 			jne	.else_if
 	
 			movq	(%rsp), %rdi
-			call	make_new_string
-			movq	%rax, (%rsp)
-			
-			call	clock@PLT
-			movq	%rax,	%rbx
+			call	random_way
+			mov	%rax, (%rsp)
 
+                        call    clock@PLT
+                        movq    %rax, %rbx
+
+			movq	(%rsp), %rdi
+			call	make_new_string
+			
 			movq	(%rsp), %rdi
 			movq	16(%rsp), %rsi
 			call	output
@@ -84,6 +95,7 @@ main:
 			movsd	%xmm1, %xmm0
 			movq	$3, %rax	
 			call	printf@PLT
+			jmp	.common_end
 		.else_if:
 			cmp 	$0, 8(%rsp)
 			je	.else
@@ -91,12 +103,26 @@ main:
 			movq	(%rsp), %rdi
 			movq	8(%rsp), %rsi
 			call	input
+			movq	%rax, (%rsp)
 
 			movq	8(%rsp), %rdi
 			call	fclose@PLT
 
+                        #leaq    .debug(%rip), %rdi
+                        #movq    (%rsp), %rsi
+                        #call    printf@PLT
+
 			movq	(%rsp), %rdi
 			call 	make_new_string
+
+                        #leaq    .debug(%rip), %rdi
+                        #movq    (%rsp), %rsi
+                        #call    printf@PLT
+
+			movq	(%rsp), %rdi
+			movq	16(%rsp), %rsi
+			call	output
+			jmp	.common_end
 		.else:
 			lea	.bad_input(%rip), %rdi
 			call	printf@PLT
@@ -109,7 +135,6 @@ main:
 	.incorrect_input:
 		lea	.bad_input(%rip), %rdi
 		call	printf@PLT
-
 	
 	.end:
 	movq	(%rsp), %rdi
@@ -125,3 +150,4 @@ main:
 
 	movq	%rbp, %rsp
 	popq	%rbp
+	ret
