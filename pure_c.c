@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     if (argc == 3) {
         FILE *file_in = fopen(argv[1], "r");
         FILE *file_out = fopen(argv[2], "w");
-        if (strcmp(argv[1], "-random") == 0 && (file_out != NULL)) {
+        if (strcmp(argv[1], "--random") == 0 && (file_out != NULL)) {
             str = random_way(str);
 
             clock_t t0 = clock();
@@ -65,6 +65,7 @@ int main(int argc, char** argv) {
             input(str, file_in);
             fclose(file_in);
             make_new_string(str);
+	    output(str, file_out);
         }
         fclose(file_out);
     } else {
