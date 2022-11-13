@@ -186,7 +186,7 @@ random_way:
 	movq	$1000000, %r12	# r12 - capacity
 	
 	call 	rand@PLT
-	movq	$100000, %rcx
+	movq	$1000000, %rcx
 	movq	$0, %rdx
 	div	%rcx
 	addq	$300000, %rdx
