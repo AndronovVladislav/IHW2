@@ -4,7 +4,7 @@
 Разработать программу, заменяющую все строчные гласные буквы
 в заданной ASCII-строке заглавными.
 ## Компиляция
-__gcc pure_c.c__
+__gcc -O0 -fno-asynchronous-unwind-tables -fcf-protection=none -march=x86-64 pure_c.c -S -o pure_c.s__
 
 __gcc main.s funcs.s__
 ## На 9

@@ -6,10 +6,10 @@ input:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	subq	$32, %rsp
-	movq	%rdi, -24(%rbp)
-	movq	%rsi, -32(%rbp)
-	movl	$1000000, -8(%rbp)
-	movl	$-1, -4(%rbp)
+	movq	%rdi, -24(%rbp) 	# str -> -24(%rbp)
+	movq	%rsi, -32(%rbp)		# stream -> -32(%rbp)
+	movl	$1000000, -8(%rbp)	# -8(%rbp) = capacity
+	movl	$-1, -4(%rbp)		# -4(%rbp) = size
 .L3:
 	addl	$1, -4(%rbp)
 	movq	-32(%rbp), %rax
@@ -48,7 +48,8 @@ input:
 	addq	%rdx, %rax
 	movb	$0, (%rax)
 	nop
-	leave
+	movq	%rbp, %rsp
+	popq	%rbp
 	ret
 	.size	input, .-input
 	.globl	make_new_string
@@ -58,8 +59,8 @@ make_new_string:
 	movq	%rsp, %rbp
 	pushq	%rbx
 	subq	$40, %rsp
-	movq	%rdi, -40(%rbp)
-	movl	$0, -20(%rbp)
+	movq	%rdi, -40(%rbp)	# str -> -40(%rbp)
+	movl	$0, -20(%rbp)	# -20(%rbp) = i
 	jmp	.L5
 .L8:
 	movl	-20(%rbp), %eax
@@ -141,9 +142,9 @@ output:
 	movq	%rsp, %rbp
 	pushq	%rbx
 	subq	$40, %rsp
-	movq	%rdi, -40(%rbp)
-	movq	%rsi, -48(%rbp)
-	movl	$0, -20(%rbp)
+	movq	%rdi, -40(%rbp)	# str -> -40(%rbp)
+	movq	%rsi, -48(%rbp)	# stream -> -48(%rbp)
+	movl	$0, -20(%rbp)	# -20(%rbp) = i;
 	jmp	.L10
 .L11:
 	movl	-20(%rbp), %eax
@@ -183,7 +184,7 @@ random_way:
 	call	time@PLT
 	movl	%eax, %edi
 	call	srand@PLT
-	movl	$1000000, -12(%rbp)
+	movl	$1000000, -12(%rbp)	# -12(%rbp) = capacity
 	call	rand@PLT
 	movslq	%eax, %rdx
 	imulq	$351843721, %rdx, %rdx
@@ -197,8 +198,8 @@ random_way:
 	subl	%edx, %eax
 	movl	%eax, %edx
 	leal	300000(%rdx), %eax
-	movl	%eax, -4(%rbp)
-	movl	$0, -8(%rbp)
+	movl	%eax, -4(%rbp)		# -4(%rbp) = n
+	movl	$0, -8(%rbp)		# -8(%rbp) = i
 	jmp	.L13
 .L15:
 	movl	-8(%rbp), %eax
@@ -249,7 +250,8 @@ random_way:
 	addq	%rdx, %rax
 	movb	$0, (%rax)
 	movq	-24(%rbp), %rax
-	leave
+	movq	%rbp, %rsp
+	popq	%rbp
 	ret
 	.size	random_way, .-random_way
 	.section	.rodata
@@ -258,7 +260,7 @@ random_way:
 .LC1:
 	.string	"w"
 .LC2:
-	.string	"-random"
+	.string	"--random"
 .LC4:
 	.string	"%lf\n"
 .LC5:
@@ -270,51 +272,51 @@ main:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	subq	$48, %rsp
-	movl	%edi, -36(%rbp)
-	movq	%rsi, -48(%rbp)
-	movl	$1000000, %edi
+	movl	%edi, -36(%rbp)	# argc -> -36(%rbp)
+	movq	%rsi, -48(%rbp)	# argv -> -48(%rbp)
+	movl	$1000000, %edi 	# вызов malloc для создания буфера на 1000000 char
 	call	malloc@PLT
-	movq	%rax, -32(%rbp)
-	cmpl	$3, -36(%rbp)
+	movq	%rax, -32(%rbp) # адрес этого массива(str) будет лежать в -32(%rbp)
+	cmpl	$3, -36(%rbp)	# if (argc == 3)
 	jne	.L18
-	movq	-48(%rbp), %rax
-	addq	$8, %rax
+	movq	-48(%rbp), %rax # выгрузка адреса первого элемента argv
+	addq	$8, %rax	# смещение на 1 элемент
 	movq	(%rax), %rax
 	leaq	.LC0(%rip), %rsi
 	movq	%rax, %rdi
-	call	fopen@PLT
-	movq	%rax, -24(%rbp)
+	call	fopen@PLT	# открытие первого файла
+	movq	%rax, -24(%rbp)	# файловый дескриптор file_in -> -24(%rbp)
 	movq	-48(%rbp), %rax
 	addq	$16, %rax
 	movq	(%rax), %rax
 	leaq	.LC1(%rip), %rsi
 	movq	%rax, %rdi
-	call	fopen@PLT
-	movq	%rax, -16(%rbp)
+	call	fopen@PLT	# то же самое для argv[2]
+	movq	%rax, -16(%rbp) # файловый дескриптор file_out -> -16(%rbp)
 	movq	-48(%rbp), %rax
 	addq	$8, %rax
 	movq	(%rax), %rax
 	leaq	.LC2(%rip), %rsi
 	movq	%rax, %rdi
 	call	strcmp@PLT
-	testl	%eax, %eax
+	testl	%eax, %eax	# if (strcmp(...) == 0)
 	jne	.L19
 	cmpq	$0, -16(%rbp)
 	je	.L19
 	movq	-32(%rbp), %rax
-	movq	%rax, %rdi
+	movq	%rax, %rdi	# выгружаем str в %rdi
 	call	random_way
-	movq	%rax, -32(%rbp)
+	movq	%rax, -32(%rbp)	# кладём адрес массива в то же место(на случай, если сработало realloc)
 	call	clock@PLT
-	movq	%rax, -8(%rbp)
-	movq	-32(%rbp), %rax
-	movq	%rax, %rdi
+	movq	%rax, -8(%rbp) 	# t0 -> -8(%rbp)
+	movq	-32(%rbp), %rax # выгражaем str
+	movq	%rax, %rdi	# в %rdi
 	call	make_new_string
 	movq	-16(%rbp), %rdx
 	movq	-32(%rbp), %rax
-	movq	%rdx, %rsi
-	movq	%rax, %rdi
-	call	output
+	movq	%rdx, %rsi	# выгрузка дескриптора file_out в %rsi
+	movq	%rax, %rdi	# выгрузка str в %rdi
+	call	output		# вызов output для записи в файл
 	call	clock@PLT
 	subq	-8(%rbp), %rax
 	cvtsi2sdq	%rax, %xmm0
@@ -322,38 +324,44 @@ main:
 	divsd	%xmm1, %xmm0
 	leaq	.LC4(%rip), %rdi
 	movl	$1, %eax
-	call	printf@PLT
+	call	printf@PLT	# вывод времени работы программы
 	jmp	.L20
 .L19:
-	cmpq	$0, -24(%rbp)
+	cmpq	$0, -24(%rbp)	# else if (file_in != NULL)
 	je	.L20
 	cmpq	$0, -16(%rbp)
 	je	.L20
 	movq	-24(%rbp), %rdx
 	movq	-32(%rbp), %rax
-	movq	%rdx, %rsi
-	movq	%rax, %rdi
+	movq	%rdx, %rsi	# выгрузка file_in в %rsi
+	movq	%rax, %rdi	# выгрузка str в %rdi
 	call	input
 	movq	-24(%rbp), %rax
-	movq	%rax, %rdi
-	call	fclose@PLT
+	movq	%rax, %rdi	# выгрузка file_in в %rdi
+	call	fclose@PLT	# закрытие file_in
 	movq	-32(%rbp), %rax
-	movq	%rax, %rdi
-	call	make_new_string
+	movq	%rax, %rdi	# выгрузка str в %rdi
+	call	make_new_string 
+	movq	-16(%rbp), %rdx
+	movq	-32(%rbp), %rax
+	movq	%rdx, %rsi	# выгрузка file_out в %rsi
+	movq	%rax, %rdi	# выгрузка str в %rdi
+	call	output
 .L20:
 	movq	-16(%rbp), %rax
-	movq	%rax, %rdi
-	call	fclose@PLT
+	movq	%rax, %rdi	# выгрузка file_out в %rdi
+	call	fclose@PLT	# закрытие file_out
 	jmp	.L21
 .L18:
 	leaq	.LC5(%rip), %rdi
-	call	puts@PLT
+	call	puts@PLT	# printf("Incorrect input\n")
 .L21:
 	movq	-32(%rbp), %rax
-	movq	%rax, %rdi
-	call	free@PLT
+	movq	%rax, %rdi	# выгрузка str в %rdi
+	call	free@PLT	# освобождение памяти, выделенной под str
 	movl	$0, %eax
-	leave
+	movq	%rbp, %rsp
+	popq	%rbp
 	ret
 	.size	main, .-main
 	.section	.rodata
